@@ -1,0 +1,25 @@
+__default__:
+    time: '7:00:00'
+    mem: '16000MB'
+    cores: 8
+    logdir: '/home/cmb-06/as/skchoudh/logs/'
+
+trim_barcodes:
+    mem: '16000MB'
+
+map_star:
+    time: '12:00:00'
+    cores: 16
+    mem: '31000MB'
+
+sam_to_sorted_bam:
+    mem: '30000MB'
+
+remove_pcr_duplicates:
+    mem: '30000MB'
+
+bam_to_bed:
+    mem: '30000MB'
+
+create_wigs:
+    mem: '30000MB'

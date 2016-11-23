@@ -14,10 +14,10 @@ Install dependencies:
 `conda create -n clipseq -f environment.yml`
 
 
-### Step 2
+### Step 2a
 
 Edit `config.py`. All the variables in the file
-are self explanatory. 
+are self explanatory.
 
 The `SAMPLES` variable refers to the filename of fastqs leaving out the extension
 whihch is assumed to be `.fq`.
@@ -30,6 +30,13 @@ whihch is assumed to be `.fq`.
 
 `_BED`: Location to BED files, required for annotation
 
+The `_OTHER` fields are relevant only if you have data from some 'other' species. For example, if you have human
+and mouse iCLIP data, these fields are used to do a lot of liftover operations. If you have single specie data, you
+can leave the `_OTHER` fields as they are.
+
+## Step 2b
+Edit `jobscript.sh` so that it has the correct `PATH` variable. Make sure it includes the conda environment as the first.
+In my case it is `home/cmb-panasas2/skchoudh/software_frozen/anaconda2/envs/clipseq/bin`. The reason to do this hard coding of `PATH` is because some hpc nodes fail to run the job because they can't detect the environment often.
 
 ## Step 3 
 

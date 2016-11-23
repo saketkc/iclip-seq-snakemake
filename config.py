@@ -45,11 +45,15 @@ CDS_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode
 
 INTRON_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode.v25.introns.bed'
 
-MIRNA_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'miRNA' + '/'+ 'GrCM38.miRNA.bed'
+MIRNA_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'miRNA' + '/'+ 'GrCh38.miRNA.bed6'
 
 GENE_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode.v25.genes.bed'
 
 LIFTOVER_CHAIN = GENOMES_DIR + '/' + GENOME_BUILD + 'liftover' + '/' + 'hg38ToMm10.over.chain'
+
+LINCRNA_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'lncRNA' + '/'+ 'gencode.v25.long_noncoding_RNAs.named.bed'
+GENE_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode.v25.genes.bed'
+GENE_NAMES = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + GENOME_BUILD + '_gene_names.tsv'
 ###########################################################################################################
 
 

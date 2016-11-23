@@ -1,5 +1,6 @@
 include:
-    'config.py'
+    #'config_cluster.py'
+    'config_human.py'
 
 workdir: ANALYSIS_DIR
 
@@ -11,17 +12,27 @@ rule all:
         expand('mapped/bams/{sample}.sorted.bam', sample=SAMPLES),
         expand('mapped/peaks/{sample}.piranha_bam_05.bed', sample=SAMPLES),
         expand('mapped/peaks/{sample}.peaks_05.bed', sample=SAMPLES),
+        expand('mapped/annotated_beds/{sample}.annotated.bed', sample=SAMPLES),
+        'mapped/annotated_beds/'+GENOME_BUILD+'_union.annotated.bed',
+        'mapped/peaks/'+GENOME_BUILD+'_union.peaks.bed',
         'mapped/annotated_peaks/'+GENOME_BUILD+'_intersected.peaks.targetgenes.bed',
-        'mapped/peaks/'+LIFT_PREFIX+'_unmapped.peaks.bed',
-        'mapped/peaks/'+LIFT_PREFIX+'_lifted.peaks.bed',
         'mapped/peaks/'+GENOME_BUILD+'_intersected.peaks.strandspecific.bed',
         'mapped/annotated_peaks/'+GENOME_BUILD+'_intersected.peaks.types.lengths.bed',
         'mapped/plots/'+GENOME_BUILD+'_all_hist.png',
         'mapped/plots/'+GENOME_BUILD+'_all_utr_regions.png',
-        'mapped/plots/'+LIFT_PREFIX+'_lifted_hist.png',
-        'mapped/plots/'+LIFT_PREFIX+'_unmapped_hist.png',
-        'mapped/plots/'+LIFT_PREFIX+'_lifted_utr_regions.png',
-        'mapped/plots/'+GENOME_BUILD+'_specific_utr_regions.png'
+        ## UNCOMMENT these if you want to do other specie analysis
+        #'mapped/annotated_peaks/'+GENOME_BUILD+'_union.peaks.scored.bed',
+        #'mapped/annotated_peaks/'+LIFT_PREFIX+'_union_lifted.peaks.bed',
+        #'mapped/annotated_peaks/'+LIFT_PREFIX+'_union_unmapped.peaks.bed',
+        #'mapped/peaks/'+LIFT_PREFIX+'_unmapped.peaks.bed',
+        #'mapped/peaks/'+LIFT_PREFIX+'_lifted.peaks.bed',
+        #'mapped/plots/'+LIFT_PREFIX+'_lifted_hist.png',
+        #'mapped/plots/'+LIFT_PREFIX+'_unmapped_hist.png',
+        #'mapped/plots/'+LIFT_PREFIX+'_lifted_utr_regions.png',
+        #'mapped/plots/'+GENOME_BUILD+'_specific_utr_regions.png',
+        #'mapped/annotated_beds/'+LIFT_PREFIX+'_union.annotated.mapped.bed',
+        #'mapped/annotated_beds_merged/'+LIFT_PREFIX+'_union.annotated.mapped.bed',
+        #unmapped = 'mapped/annotated_beds_merged/'+LIFT_PREFIX+'_union.annotated.unmapped.bed',
 
 rule perform_qc:
     input: expand('{rawdata_dir}/{specie}/{sample}.fq', specie=SPECIES, rawdata_dir=RAWDATA_DIR, sample=SAMPLES)
@@ -157,6 +168,66 @@ rule intersect_peaks:
         bedtools intersect -a {input[1]} -b {input[0]} {input[2]} > {output}
         '''
 
+rule union_peaks:
+    input: expand('mapped/peaks/{sample}.peaks_05.bed', sample=SAMPLES)
+    output:
+        #'mapped/peaks/'+GENOME_BUILD+'_union.peaks.uncollapsed.bed',
+        'mapped/peaks/'+GENOME_BUILD+'_union.peaks.bed'
+    shell:
+        # Not stranded
+        r'''
+        cat {input[0]} {input[1]} {input[2]} | sort -k1,1 -k2,2n > {output}
+        '''
+
+rule annotate_union_peaks:
+    input: 'mapped/peaks/'+GENOME_BUILD+'_union.peaks.bed'
+    output: 'mapped/annotated_peaks/'+GENOME_BUILD+'_union.peaks.types.bed'
+    params:
+        gene_annotations = GENE_BED
+    shell:
+        r'''
+        export LC_ALL=en_US.UTF-8 && python {SRC_DIR}/determine_target_genes.py --annotation {params.gene_annotations}\
+        --bed {input}\
+        --outbed {output}
+        '''
+
+rule unique_union_peaks:
+    input: 'mapped/annotated_peaks/'+GENOME_BUILD+'_union.peaks.types.bed'
+    output: 'mapped/annotated_peaks/'+GENOME_BUILD+'_union.peaks.unique.bed'
+    shell:
+        r'''
+        awk '{{print $1"\t"$2"\t"$3"\t"$1"_"$2"_"$3"_"$4"\t"".""\t"$6}}' {input} | sort -k1,1 -k2,2n | uniq -u > {output}
+        '''
+
+rule count_union_replicates:
+    input:
+        'mapped/annotated_peaks/'+GENOME_BUILD+'_union.peaks.unique.bed',
+        expand('mapped/peaks/{sample}.peaks_05.bed', sample=SAMPLES)
+    output: 'mapped/annotated_peaks/'+GENOME_BUILD+'_union.peaks.scored.bed'
+    shell:
+        r'''
+        python {SRC_DIR}/count_replicates.py --master {input[0]} --outbed {output} {input[1]} {input[2]} {input[3]}
+        '''
+
+rule lift_union_peaks:
+    input: 'mapped/annotated_peaks/'+GENOME_BUILD+'_union.peaks.scored.bed'
+    output:
+        mapped = 'mapped/annotated_peaks/'+LIFT_PREFIX+'_union_lifted.peaks.bed',
+        unmapped = 'mapped/annotated_peaks/'+LIFT_PREFIX+'_union_unmapped.peaks.bed',
+    params:
+        chain = GENOMES_DIR+'/'+GENOME_BUILD+'/liftover/'+LIFT_PREFIX+'.over.chain',
+        unmapped = 'mapped/annotated_peaks/'+LIFT_PREFIX+'_union_unmapped_all.peaks.bed',
+        unmapped_info = 'mapped/annotated_peaks/'+LIFT_PREFIX+'_union_unmapped_info.peaks.bed',
+    shell:
+        r'''
+        liftOver {input} {params.chain} {output.mapped} {params.unmapped} &&\
+        awk 'NR % 2 == 0 {{print;}}' {params.unmapped} > {output.unmapped} &&\
+        awk 'NR % 2 == 1 {{print;}}' {params.unmapped} > {params.unmapped_info}
+        '''
+
+
+
+
 rule intersect_peaks_strandspecific:
     input: expand('mapped/peaks/{sample}.peaks_05.bed', sample=SAMPLES)
     output: 'mapped/peaks/'+GENOME_BUILD+'_intersected.peaks.strandspecific.bed'
@@ -262,7 +333,7 @@ rule run_ensembl_orthology:
     output: 'mapped/orthology/'+GENOME_BUILD+'_intersected.peaks.orthology'
     shell:
         r'''
-        Rscript --vanilla {SRC_DIR}/run_ensemble_{SPECIES}.R {input} {output}
+        Rscript --vanilla {SRC_DIR}/run_orthology_{SPECIES}.R {input} {output}
         '''
 
 rule determine_peak_type:
@@ -424,5 +495,90 @@ rule determine_target_genes_specific:
         export LC_ALL=en_US.UTF-8 && python {SRC_DIR}/determine_target_genes.py --annotation {params.gene_annotations}\
         --bed {input}\
         --outbed {output[0]}
+        '''
+
+rule annotate_all_beds:
+    input: 'mapped/peaks/{sample}.peaks_05.bed'
+    output: 'mapped/annotated_beds/{sample}.annotated.bed'
+    shell:
+        r'''export LC_ALL=en_US.UTF-8 && python {SRC_DIR}/annotate_by_gene_region.py --cds {CDS_BED} \
+            --utr5 {UTR5_BED} \
+            --utr3 {UTR3_BED} \
+            --intron {INTRON_BED} \
+            --mirna {MIRNA_BED} \
+            --lincrna {LINCRNA_BED} \
+            --gene {GENE_BED} \
+            --genename {GENE_NAMES} \
+            --bed {input} \
+            --outbed {output}
+            '''
+
+rule annotate_union_bed:
+    input: 'mapped/peaks/'+GENOME_BUILD+'_union.peaks.bed'
+    output: 'mapped/annotated_beds/'+GENOME_BUILD+'_union.annotated.bed'
+    shell:
+        r'''export LC_ALL=en_US.UTF-8 && python {SRC_DIR}/annotate_by_gene_region.py --cds {CDS_BED} \
+            --utr5 {UTR5_BED} \
+            --utr3 {UTR3_BED} \
+            --intron {INTRON_BED} \
+            --mirna {MIRNA_BED} \
+            --lincrna {LINCRNA_BED} \
+            --gene {GENE_BED} \
+            --genename {GENE_NAMES} \
+            --bed {input} \
+            --outbed {output}
+            '''
+
+rule liftover_annotated_union_bed:
+    input: 'mapped/annotated_beds/'+GENOME_BUILD+'_union.annotated.bed'
+    output:
+        mapped = 'mapped/annotated_beds/'+LIFT_PREFIX+'_union.annotated.mapped.bed',
+        unmapped = 'mapped/annotated_beds/'+LIFT_PREFIX+'_union.annotated.unmapped.bed',
+    params:
+        chain = GENOMES_DIR+'/'+GENOME_BUILD+'/liftover/'+LIFT_PREFIX+'.over.chain',
+        unmapped = 'mapped/annotated_beds/'+LIFT_PREFIX+'_union.annotated.unmapped_withinfo.bed',
+        unmapped_info = 'mapped/annotated_beds/'+LIFT_PREFIX+'_union.annotated.unmapped_info.bed',
+    shell:
+        r'''
+        liftOver {input} {params.chain} {output.mapped} {params.unmapped} &&\
+        awk 'NR % 2 == 0 {{print;}}' {params.unmapped} > {output.unmapped} &&\
+        awk 'NR % 2 == 1 {{print;}}' {params.unmapped} > {params.unmapped_info}
+        '''
+
+rule merge_union_bed:
+    input: 'mapped/annotated_beds/'+GENOME_BUILD+'_union.annotated.bed'
+    output:
+        'mapped/annotated_beds_merged/'+GENOME_BUILD+'_union.annotated.bed3',
+        'mapped/annotated_beds_merged/'+GENOME_BUILD+'_union.annotated.bed'
+    shell:
+        r'''export LC_ALL=en_US.UTF-8 && bedtools merge -i {input} > {output[0]} && python {SRC_DIR}/annotate_by_gene_region.py --cds {CDS_BED} \
+            --utr5 {UTR5_BED} \
+            --utr3 {UTR3_BED} \
+            --intron {INTRON_BED} \
+            --mirna {MIRNA_BED} \
+            --lincrna {LINCRNA_BED} \
+            --gene {GENE_BED} \
+            --genename {GENE_NAMES} \
+            --bed {output[0]} \
+            --outbed {output[1]} &&\
+            bedSort {output[1]} {output[1]}
+            '''
+
+rule liftover_merged_union_bed:
+    input: 'mapped/annotated_beds_merged/'+GENOME_BUILD+'_union.annotated.bed'
+    output:
+        mapped = 'mapped/annotated_beds_merged/'+LIFT_PREFIX+'_union.annotated.mapped.bed',
+        unmapped = 'mapped/annotated_beds_merged/'+LIFT_PREFIX+'_union.annotated.unmapped.bed',
+    params:
+        chain = GENOMES_DIR+'/'+GENOME_BUILD+'/liftover/'+LIFT_PREFIX+'.over.chain',
+        unmapped = 'mapped/annotated_beds/'+LIFT_PREFIX+'_union.annotated.unmapped_withinfo.bed',
+        unmapped_info = 'mapped/annotated_beds/'+LIFT_PREFIX+'_union.annotated.unmapped_info.bed',
+    shell:
+        r'''
+        liftOver {input} {params.chain} {output.mapped} {params.unmapped} &&\
+        awk 'NR % 2 == 0 {{print;}}' {params.unmapped} > {output.unmapped} &&\
+        awk 'NR % 2 == 1 {{print;}}' {params.unmapped} > {params.unmapped_info} &&\
+        bedSort {output.mapped} {output.mapped} &&\
+        bedSort {output.unmapped} {output.unmapped}
         '''
 

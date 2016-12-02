@@ -11,7 +11,7 @@ If there are 3 replicates the pipeline will run paralley for all 3, using
 
 Install dependencies:
 
-`conda create -n clipseq -f environment.yml`
+`conda env create -n clipseq -f environment.yml`
 
 
 ### Step 2a

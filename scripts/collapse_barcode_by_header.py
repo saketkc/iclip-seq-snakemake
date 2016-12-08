@@ -13,6 +13,7 @@ import csv
 import os
 import click
 import pysam
+import sys
 import ntpath
 
 
@@ -43,7 +44,28 @@ def collapse_reads(reads, outbam, barcode_header_mapping, max_ham_distance=0):
         try:
             current_barcode = barcode_header_mapping[query_name]
         except KeyError:
-            current_barcode = barcode_header_mapping[query_name+'/1']
+            try:
+                current_barcode = barcode_header_mapping[query_name+'/1']
+            except KeyError:
+                ##TODO For some arbitrary reason the bam contains the read names
+                ## as 'SRRXXXX.1232123' missing the flowchannel information
+                ## I am not sure why that happens, but the identifiers of these types
+                ## seem to be themselves unique so we can rely on a fuzzy match
+                ## which is actually not so fuzzy since we just check if the stored barcode information
+                ## starts with this string
+                ## Fuzzy search
+                lookup_count = 0
+                lookup_key = None
+                for key in barcode_header_mapping.keys():
+                    if key.startswith(query_name+' '):
+                        lookup_count+=1
+                        lookup_key = key
+                if lookup_count == 1:
+                    current_barcode = barcode_header_mapping[lookup_key]
+                else:
+                    sys.stderr.write('Failed to lookup barcode for: {}\n'.format(query_name))
+                    sys.stderr.write('Barcode mapping: {}\n'.format('\n'.join(barcode_header_mapping.keys())))
+                    sys.exit(1)
 
         if current_barcode in barcode_counter:
             removed_barcode_counter[current_barcode] += 1

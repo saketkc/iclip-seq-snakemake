@@ -10,7 +10,7 @@ trim_barcodes:
 map_star:
     time: '12:00:00'
     cores: 16
-    mem: '31000MB'
+    mem: '61000MB'
 
 sam_to_sorted_bam:
     mem: '30000MB'

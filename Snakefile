@@ -1,12 +1,22 @@
 include:
-    #'config_cluster.py'
-    'config_human.py'
+    'configs/config_GSE63905.py'
 
 workdir: ANALYSIS_DIR
 
+import os
+import glob
+
+SAMPLES = []
+for path in glob.glob('{}/*.sra'.format(RAWDATA_DIR)):
+    dir, filename = os.path.split(path)
+    SAMPLES.append(filename.replace('.sra',''))
+
+
+
 rule all:
     input:
-        expand('preprocessed/{sample}_btrimmed.fq', sample=SAMPLES),
+        expand('sratofastq/{sample}.fastq', sample=SAMPLES),
+        expand('preprocessed/{sample}_btrimmed.fastq', sample=SAMPLES),
         expand('mapped/tracks/{sample}.bigwig', sample=SAMPLES),
         expand('mapped/beds/{sample}.bed', sample=SAMPLES),
         expand('mapped/bams/{sample}.sorted.bam', sample=SAMPLES),
@@ -34,22 +44,28 @@ rule all:
         #'mapped/annotated_beds_merged/'+LIFT_PREFIX+'_union.annotated.mapped.bed',
         #unmapped = 'mapped/annotated_beds_merged/'+LIFT_PREFIX+'_union.annotated.unmapped.bed',
 
+rule sra_to_fastq:
+    input: RAWDATA_DIR + '/{sample}.sra'
+    output: 'sratofastq/{sample}.fastq'
+    shell:
+        r'''fastq-dump --split-3 -O sratofastq {input}'''
+
 rule perform_qc:
-    input: expand('{rawdata_dir}/{specie}/{sample}.fq', specie=SPECIES, rawdata_dir=RAWDATA_DIR, sample=SAMPLES)
+    input: 'sratofastq/{sample}.fastq',
     params:
         out_dir = 'qc'
     output:
-        html = 'qc/{sample}_fastqc.html',
-        zip = 'qc/{sample}_fastqc.zip',
+       'qc/{sample}_fastqc.html',
+       'qc/{sample}_fastqc.zip',
     shell:
         r'''
             fastqc -o {params.out_dir} -f fastq {input}
         '''
 
 rule trim_barcodes:
-    input: expand('{rawdata_dir}/{specie}/{sample}.fq', specie=SPECIES, rawdata_dir=RAWDATA_DIR, sample=SAMPLES)
+    input: 'sratofastq/{sample}.fastq'
     output:
-        fastq = 'preprocessed/{sample}_btrimmed.fq',
+        fastq = 'preprocessed/{sample}_btrimmed.fastq',
         barcodes = 'preprocessed/{sample}.barcodes.txt'
     params:
         out_dir = 'preprocessed'
@@ -59,7 +75,7 @@ rule trim_barcodes:
         '''
 
 rule trim_adapters:
-    input: 'preprocessed/{sample}_btrimmed.fq'
+    input: 'preprocessed/{sample}_btrimmed.fastq'
     output: 'preprocessed/{sample}_btrimmed_trimmed.fq'
     shell:
         r'''
@@ -67,7 +83,7 @@ rule trim_adapters:
         '''
 
 rule map_star:
-    input: 'preprocessed/{sample}_btrimmed_trimmed.fq'
+    input: 'preprocessed/{sample}_btrimmed.fastq'
     output: 'mapped/bams/{sample}.sorted.bam'
     params:
         prefix = 'mapped/bams/{sample}',

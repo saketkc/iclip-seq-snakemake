@@ -1,6 +1,6 @@
 __default__:
-    time: '7:00:00'
-    mem: '16000MB'
+    time: '12:00:00'
+    mem: '60000MB'
     cores: 8
     logdir: '/home/cmb-06/as/skchoudh/logs/'
 

@@ -11,13 +11,13 @@ SPECIES = 'mouse'
 GENOME_BUILD_OTHER = 'hg38'
 
 ## Parent location of raw .fq files
-RAWDATA_DIR ='/home/cmb-06/as/skchoudh/data/public_HuR/GSE63905'
+RAWDATA_DIR ='/home/cmb-06/as/skchoudh/dna/public_HuR/GSE63905'
 
 ## Absolute path to the scripts directory
-SRC_DIR = '/home/cmb-panasas2/skchoudh/github_projects/clip_seq_pipeline/scripts'
+SRC_DIR = '/home/cmb-panasas2/skchoudh/github_projects/iclip-seq-snakemake/scripts'
 
 ## Absolute path to root directory where results will be created
-ANALYSIS_DIR = '/staging/as/skchoudh/rna/GSE63905/clip_seq'
+ANALYSIS_DIR = '/staging/as/skchoudh/rna/public_HuR/GSE63905/clip_seq'
 ###########################################################################################################
 
 
@@ -35,7 +35,7 @@ UTR5_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencod
 UTR3_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode.vM11.3UTRs.bed'
 CDS_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode.vM11.CDS.bed'
 INTRON_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode.vM11.introns.bed'
-MIRNA_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'miRNA' + '/'+ 'GrCM38.miRNA.bed'
+MIRNA_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'miRNA' + '/'+ 'GrCM38.miRNA.bed6'
 GENE_BED = GENOMES_DIR + '/' + GENOME_BUILD + '/' + 'annotation' + '/' + 'gencode.vM11.genes.bed'
 LIFTOVER_CHAIN = GENOMES_DIR + '/' + GENOME_BUILD + 'liftover' + '/' + 'mm10ToHg38.over.chain'
 
@@ -55,7 +55,7 @@ CDS_BED_OTHER = GENOMES_DIR + '/' + GENOME_BUILD_OTHER + '/' + 'annotation' + '/
 
 INTRON_BED_OTHER = GENOMES_DIR + '/' + GENOME_BUILD_OTHER + '/' + 'annotation' + '/' + 'gencode.v25.introns.bed'
 
-MIRNA_BED_OTHER = GENOMES_DIR + '/' + GENOME_BUILD_OTHER + '/' + 'miRNA' + '/' + 'GrCh38.miRNA.bed'
+MIRNA_BED_OTHER = GENOMES_DIR + '/' + GENOME_BUILD_OTHER + '/' + 'miRNA' + '/' + 'GrCh38.miRNA.bed6'
 
 GENE_BED_OTHER = GENOMES_DIR + '/' + GENOME_BUILD_OTHER + '/' + 'annotation' + '/' + 'gencode.v25.genes.bed'
 

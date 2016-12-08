@@ -31,7 +31,7 @@ def hamming(str1, str2):
     """Hamming distance between two strings"""
     return sum(a!=b and not( a=='N' or b=='N' ) for a,b in zip(str1, str2))
 
-def collapse_reads(reads, outbam, barcode_header_mapping, max_ham_distance=0):
+def collapse_reads(reads, outbam, barcode_header_mapping, alternate_barcode_mapping=None, max_ham_distance=0):
     barcode_counter = Counter()
     removed_barcode_counter = Counter()
     unique_reads = 0
@@ -54,6 +54,7 @@ def collapse_reads(reads, outbam, barcode_header_mapping, max_ham_distance=0):
                 ## which is actually not so fuzzy since we just check if the stored barcode information
                 ## starts with this string
                 ## Fuzzy search
+                """
                 lookup_count = 0
                 lookup_key = None
                 for key in barcode_header_mapping.keys():
@@ -66,6 +67,8 @@ def collapse_reads(reads, outbam, barcode_header_mapping, max_ham_distance=0):
                     sys.stderr.write('Failed to lookup barcode for: {}\n'.format(query_name))
                     sys.stderr.write('Barcode mapping: {}\n'.format('\n'.join(barcode_header_mapping.keys())))
                     sys.exit(1)
+                """
+                current_barcode = alternate_barcode_mapping[query_name]
 
         if current_barcode in barcode_counter:
             removed_barcode_counter[current_barcode] += 1
@@ -148,6 +151,7 @@ def collapse_bam_barcodes(inbam, outbam, barcodes):
         reader = csv.reader(barcodes_fh, delimiter='\t')
         barcode_header_mapping = dict([(row[0], row[1]) for row in reader])
 
+    alternate_barcode_mapping = {k.split(' ')[0]:v for k,v in barcode_header_mapping.items()}
     positive_mappings = OrderedDict()
     negative_mappings = OrderedDict()
     all_barcodes_counter = Counter()
@@ -177,14 +181,14 @@ def collapse_bam_barcodes(inbam, outbam, barcodes):
             for (t_chrom, t_pos), reads in list(negative_mappings.items()):
                 if t_pos >= current_position:
                     break
-                all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping)
+                all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping, alternate_barcode_mapping)
                 #neg_counts+=counts
                 #all_barcodes_counter += all_barcodes
                 #removed_barcodes_counter += removed_barcodes
                 del negative_mappings[(t_chrom, t_pos)]
             if previous_chrom != chrom:
                 for (t_chrom, t_pos), reads in list(negative_mappings.items()):
-                    all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping)
+                    all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping, alternate_barcode_mapping)
                     #neg_counts+=counts
                     #all_barcodes_counter += all_barcodes
                     #removed_barcodes_counter += removed_barcodes
@@ -192,7 +196,7 @@ def collapse_bam_barcodes(inbam, outbam, barcodes):
                 assert len(negative_mappings) == 0
 
             for (t_chrom, t_pos), reads in list(positive_mappings.items()):
-                all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping)
+                all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping, alternate_barcode_mapping)
                 #pos_counts+= counts
                 #all_barcodes_counter += all_barcodes
                 #removed_barcodes_counter += removed_barcodes
@@ -213,14 +217,14 @@ def collapse_bam_barcodes(inbam, outbam, barcodes):
 
 
     for (t_chrom, t_pos), reads in list(positive_mappings.items()):
-        all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping)
+        all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping, alternate_barcode_mapping)
         #pos_counts+=counts
         #all_barcodes_counter += all_barcodes
         #removed_barcodes_counter += removed_barcodes
         del positive_mappings[(t_chrom, t_pos)]
     ## Delete all previous negative mappings
     for (t_chrom, t_pos), reads in list(negative_mappings.items()):
-        all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping)
+        all_barcodes, removed_barcodes, counts = collapse_reads(reads, outbam, barcode_header_mapping, alternate_barcode_mapping)
         #neg_counts+=counts
         #all_barcodes_counter += all_barcodes
         #removed_barcodes_counter += removed_barcodes

@@ -5,6 +5,7 @@ import seaborn as sns
 import click
 import pandas as pd
 import matplotlib.pylab as plt
+sns.set_style('whitegrid')
 
 BED_COL_NAMES = ['chrom', 'start', 'stop', 'name', 'signalValue' ,'strand',]
 
@@ -26,6 +27,7 @@ def plot_hist_peak(inbed, outprefix, title):
     #fig = plt.figure()
     #plt.hist(df['peak_length'].tolist())
     ax = sns.barplot(X,Y)
+    plt.legend()
     ax.set_xlabel('Peak length')
     ax.set_ylabel('Count')
     ax.set_title('{} | Total peaks = {}'.format(title, total_peaks))

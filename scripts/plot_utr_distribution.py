@@ -2,6 +2,8 @@
 import matplotlib
 matplotlib.use('Agg')
 import seaborn as sns
+sns.set_style('whitegrid')
+
 import click
 import pandas as pd
 
@@ -13,7 +15,7 @@ import pandas as pd
 def plot_utr_distribution(infile, outfile, title):
     df = pd.read_table(infile, names=['chrom', 'start', 'stop', 'name', 'score', 'strand'])
     title += ' Total peaks: {}'.format(len(df.index))
-    ax = df['name'].value_counts().plot(kind='bar', rot=0).set_title(title)
+    ax = df['name'].value_counts().plot(kind='bar', rot=0, color='black').set_title(title)
     fig = ax.get_figure()
     fig.savefig(outfile)
 
